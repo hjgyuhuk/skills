@@ -1,156 +1,40 @@
-# KUMO KNOWLEDGE BASE
+---
+name: kumo-ui
+description: Build, modify, or review React interfaces that should use Cloudflare Kumo UI (`@cloudflare/kumo`) components. Use when Codex needs to choose Kumo components, import them correctly, compose Kumo compound components, follow Kumo design tokens, or reference the Kumo component registry for UI implementation details.
+---
 
-**Generated:** 2026-03-18 | **Commit:** 38518e34 | **Branch:** rozenmd/fix-preview
+# Kumo UI
 
-## OVERVIEW
+## Core Workflow
 
-Cloudflare's React component library (`@cloudflare/kumo`). pnpm monorepo: component library (Base UI + Tailwind v4), Astro docs site, Figma plugin, screenshot worker. ESM-only, Node 24+.
+Use Kumo UI as the first choice for Cloudflare-style React product UI.
 
-## STRUCTURE
+1. Inspect the existing app before editing. Reuse established imports, layout primitives, form state patterns, and validation patterns.
+2. If `@cloudflare/kumo` is not installed, add it with `pnpm add @cloudflare/kumo`.
+3. Import components from `@cloudflare/kumo`; prefer named imports for only the components used.
+4. Read [COMPONENTS.md](references/COMPONENTS.md) when selecting components, checking key props, or composing compound components.
+5. Use Kumo primitives before building custom UI. Reach for blocks (`PageHeader`, `ResourceListPage`, `DeleteResource`) for common page-level patterns.
+6. Preserve accessibility contracts: provide labels for form controls, legends for groups, `aria-label` for icon-only actions, and controlled values where the surrounding code expects controlled state.
+7. Prefer Kumo tokens and component props for styling. Use `className` only for local layout, spacing, and composition that props do not cover.
+8. If exact latest props are critical, fetch the live registry at `https://kumo-ui.com/api/component-registry` and reconcile against the local reference.
 
-```
-kumo/
-├── packages/
-│   ├── kumo/                     # Component library → see packages/kumo/AGENTS.md
-│   ├── kumo-docs-astro/          # Astro docs site → see packages/kumo-docs-astro/AGENTS.md
-│   ├── kumo-figma/               # Figma plugin → see packages/kumo-figma/AGENTS.md
-│   └── kumo-screenshot-worker/   # Visual regression Worker → see packages/kumo-screenshot-worker/AGENTS.md
-├── ci/                           # CI/CD scripts → see ci/AGENTS.md
-├── lint/                         # Custom oxlint rules (5 rules in package, 4 at root)
-├── .changeset/                   # Changeset files
-├── .github/workflows/            # 6 workflow YAMLs (release, pullrequest, preview, etc.)
-└── lefthook.yml                  # Pre-push changeset validation
-```
+## Selection Guidance
 
-## WHERE TO LOOK
+- Use `Button`, `ClipboardText`, `DropdownMenu`, `MenuBar`, and `Link` for actions and command surfaces.
+- Use `Input`, `InputArea`, `Select`, `Combobox`, `Checkbox`, `Radio`, `Switch`, `DatePicker`, `DateRangePicker`, `Field`, `Label`, and `SensitiveInput` for data entry.
+- Use `Banner`, `Dialog`, `Popover`, `Tooltip`, `Toasty`, `Empty`, and `Loader` for feedback and overlays.
+- Use `Grid`, `Surface`, `LayerCard`, `Table`, `Tabs`, `Sidebar`, `Breadcrumbs`, `Pagination`, and `CommandPalette` for structure and navigation.
+- Use `Text`, `Badge`, `Code`, `Meter`, `CloudflareLogo`, and `Collapsible` for display details.
 
-| Task                 | Location                                         | Notes                                                    |
-| -------------------- | ------------------------------------------------ | -------------------------------------------------------- |
-| Component API        | `packages/kumo/ai/component-registry.{json,md}`  | Source of truth. Query with `jq` or CLI                  |
-| Component source     | `packages/kumo/src/components/{name}/{name}.tsx` | Standard pattern                                         |
-| Blocks (installable) | `packages/kumo/src/blocks/`                      | NOT library exports; installed via CLI                   |
-| Semantic tokens      | `packages/kumo/src/styles/theme-kumo.css`        | AUTO-GENERATED; edit `scripts/theme-generator/config.ts` |
-| Custom lint rules    | `lint/` (4 rules) + `packages/kumo/lint/` (+1)   | Package copy adds `no-deprecated-props`                  |
-| Demo examples        | `packages/kumo-docs-astro/src/components/demos/` | Feed into registry codegen                               |
-| CI scripts           | `ci/`                                            | Reporter system, versioning, deployment                  |
-| Figma generators     | `packages/kumo-figma/src/generators/`            | 37 component generators                                  |
+## Implementation Rules
 
-## CONVENTIONS
+- Do not duplicate Kumo component behavior with ad hoc HTML/CSS when a listed component exists.
+- Do not hard-code colors outside Kumo token classes unless the surrounding codebase already does so for the same reason.
+- Use `@phosphor-icons/react` icons where Kumo examples expect icon elements.
+- Treat compound components as namespaces, for example `Table.Header`, `Table.Row`, `Sidebar.Provider`, or `Breadcrumbs.Link`, when the component reference lists subcomponents.
+- For form controls with `error`, `description`, `label`, `labelTooltip`, or `required`, prefer the built-in props over hand-rolled wrappers.
+- For destructive flows, prefer the `DeleteResource` block or a `Dialog` plus destructive `Button` variants.
 
-### Styling (CRITICAL)
+## Verification
 
-- **ONLY semantic tokens**: `bg-kumo-base`, `text-kumo-default`, `border-kumo-line`, `ring-kumo-hairline`
-- **NEVER raw Tailwind colors**: `bg-blue-500`, `text-gray-900` → fails lint
-- **NEVER `dark:` variant**: dark mode automatic via `light-dark()` in CSS custom properties
-- **Exceptions**: `bg-white`, `bg-black`, `text-white`, `text-black`, `transparent`
-- **`cn()` utility**: Always compose classNames via `cn("base", conditional && "extra", className)`
-- **Surface hierarchy**: `bg-kumo-base` → `bg-kumo-elevated` → `bg-kumo-recessed`
-- **Mode/theme**: `data-mode="light"|"dark"` + `data-theme="fedramp"` on parent element
-
-### Components
-
-- **Scaffold new**: `pnpm --filter @cloudflare/kumo new:component` (never create manually)
-- **Registry first**: Always check `component-registry.json` before using/modifying a component
-- See `packages/kumo/AGENTS.md` for component conventions (variants, forwardRef, displayName)
-
-### Imports
-
-- **No cross-package relative imports**: Use `@cloudflare/kumo` not `../../kumo/src/...` (lint-enforced)
-- **ESM-only**: `"type": "module"` throughout. No CJS.
-
-### Changesets
-
-- **Enforced for `packages/kumo/`**: Pre-push hook requires changeset for npm-published library
-- **Optional for `kumo-docs-astro`**: Version appears in `/api/version` endpoint (debugging) but nothing depends on it
-- **Not needed for `kumo-figma`**: Figma plugin, not published to npm
-- **Pre-push hook**: Lefthook validates before push. Bypass: `git push --no-verify`
-- **AI agents NEVER**: `pnpm version`, `pnpm release`, `pnpm publish:beta`, `pnpm release:production`
-
-### Pull Request Descriptions
-
-PR descriptions are validated by CI. Include this checklist at the end of your PR body:
-
-```markdown
-- Reviews
-- [ ] bonk has reviewed the change
-- [x] automated review not possible because: <your reason here>
-- Tests
-- [ ] Tests included/updated
-- [ ] Automated tests not possible - manual testing has been completed as follows: <description>
-- [x] Additional testing not necessary because: <your reason here>
-```
-
-Rules:
-
-- Check ONE option in each section (Reviews and Tests)
-- If providing a justification (`because:` or `as follows:`), text must follow on the same line
-- Indentation is flexible — nested under headers is fine
-- Skip validation entirely with the `skip-pr-description-validation` label
-
-## ANTI-PATTERNS
-
-| Pattern                        | Why                                                          | Instead                                     |
-| ------------------------------ | ------------------------------------------------------------ | ------------------------------------------- |
-| `bg-blue-500`, `text-gray-*`   | Breaks theming, fails lint                                   | `bg-kumo-brand`, `text-kumo-default`        |
-| `dark:bg-black`                | Redundant; tokens auto-adapt                                 | Remove `dark:` prefix                       |
-| Missing `displayName`          | Breaks React DevTools                                        | Set `.displayName` on forwardRef components |
-| Manual component file creation | Misses vite/package.json/index updates                       | Use scaffolding tool                        |
-| Editing auto-generated files   | `theme-kumo.css`, `ai/schemas.ts`, `ai/component-registry.*` | Edit source configs, run codegen            |
-
-## COMMANDS
-
-```bash
-# Cross-cutting
-pnpm dev                                          # Docs dev server (localhost:4321)
-pnpm lint                                         # oxlint + custom rules
-pnpm typecheck                                    # TypeScript check all packages
-pnpm changeset                                    # Create changeset (required for kumo changes)
-
-# Package-specific (see child AGENTS.md for full lists)
-pnpm --filter @cloudflare/kumo build              # Build library
-pnpm --filter @cloudflare/kumo test               # Vitest
-pnpm --filter @cloudflare/kumo codegen:registry   # Regenerate component-registry
-pnpm --filter @cloudflare/kumo-figma build        # Build Figma plugin
-```
-
-## BUILD PIPELINE
-
-```
-kumo-docs-astro demos → dist/demo-metadata.json
-                              ↓
-kumo codegen:registry → ai/component-registry.{json,md} + ai/schemas.ts
-                              ↓
-kumo-figma build:data → generated/*.json → esbuild → code.js (IIFE, ES2017)
-```
-
-Cross-package dependency: registry codegen requires docs demo metadata. Run `codegen:demos` in docs before `codegen:registry` in kumo.
-
-## TOOLCHAIN
-
-| Tool       | Version   | Notes                                  |
-| ---------- | --------- | -------------------------------------- |
-| Node       | ^24.12.0  | Engine constraint                      |
-| pnpm       | >=10.21.0 | Workspace manager                      |
-| TypeScript | 5.9.2     | Via pnpm catalog                       |
-| Vite       | 7.1.7     | Library mode (kumo), dev server (docs) |
-| Tailwind   | 4.1.17    | v4 with `light-dark()` tokens          |
-| oxlint     | 1.42.0    | Primary linter + 5 custom JS rules     |
-| Vitest     | 3.2.4     | happy-dom env, v8 coverage             |
-| Changesets | latest    | Version management                     |
-| Astro      | latest    | Docs framework                         |
-
-## SECURITY
-
-- **NEVER commit** Figma tokens, npm tokens, or API keys
-- `.env` files are gitignored
-- `wrangler.jsonc` contains Cloudflare account IDs (not secret but don't expose)
-
-## NOTES
-
-- `ai/component-registry.json`, `ai/component-registry.md` are auto-generated at build time and gitignored (shipped in npm package). `ai/schemas.ts` is a stub for fresh clones (full version generated during build)
-- `src/primitives/` (40 files) are auto-generated Base UI re-exports
-- Blocks in `src/blocks/` are NOT exported from package index; installed via CLI `kumo add`
-- `src/catalog/` is a runtime JSON-UI rendering module (separate concern from component library)
-- Dual linter: oxlint (fast, custom rules) + ESLint (7 jsx-a11y rules only via oxlint JS plugin)
-- `PLOP_INJECT_EXPORT` and `PLOP_INJECT_COMPONENT_ENTRY` markers in source for scaffolding
-- 6 GitHub Actions workflows exist in `.github/workflows/` (release, pullrequest, preview, preview-deploy, bonk, reviewer)
+After editing UI code, run the repo's relevant typecheck, lint, test, or build command. If the app has a browser surface and the change affects layout, inspect it with a local dev server or screenshot workflow.
