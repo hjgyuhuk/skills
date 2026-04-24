@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kumo UI"
+  short_description: "Use Cloudflare Kumo UI components"
+  default_prompt: "Use $kumo-ui to build a React UI with Kumo components."
