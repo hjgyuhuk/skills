@@ -1,0 +1,99 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Hero from "@/components/Hero.astro";
+import FeatureRail from "@/components/FeatureRail.astro";
+import MetricsBand from "@/components/MetricsBand.astro";
+---
+
+<BaseLayout>
+  <main>
+    <Hero />
+    <FeatureRail />
+    <MetricsBand />
+
+    <section id="contact" class="shell grid gap-8 py-20 md:grid-cols-[1fr_auto] md:items-end md:py-28">
+      <div>
+        <p class="eyebrow mb-5" data-reveal>Next frame</p>
+        <h2 class="max-w-4xl font-display text-6xl leading-[0.9] md:text-8xl" data-reveal>
+          Replace the story, keep the system.
+        </h2>
+      </div>
+      <a
+        class="focus-ring inline-flex h-16 items-center justify-center bg-coral px-8 text-sm font-black uppercase text-ink shadow-sharp"
+        data-magnetic
+        data-reveal
+        href="mailto:hello@example.com"
+      >
+        Contact
+      </a>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  import Lenis from "lenis";
+  import { animate, inView, stagger } from "motion";
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (!reduceMotion) {
+    const lenis = new Lenis({
+      duration: 1.08,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true
+    });
+
+    const raf = (time: number) => {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    };
+
+    requestAnimationFrame(raf);
+  }
+
+  if (!reduceMotion) {
+    const heroItems = document.querySelectorAll("[data-hero]");
+    animate(
+      heroItems,
+      { opacity: [0, 1], y: [36, 0], filter: ["blur(12px)", "blur(0px)"] },
+      { duration: 0.8, delay: stagger(0.08), easing: [0.16, 1, 0.3, 1] }
+    );
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-reveal]").forEach((element) => {
+    if (!reduceMotion) {
+      element.style.opacity = "0";
+    }
+
+    inView(
+      element,
+      () => {
+        if (element.dataset.revealed) return;
+        element.dataset.revealed = "true";
+
+        animate(
+          element,
+          { opacity: [0, 1], y: [28, 0] },
+          { duration: reduceMotion ? 0.01 : 0.7, easing: [0.16, 1, 0.3, 1] }
+        );
+      },
+      { margin: "-12% 0px", amount: 0.2 }
+    );
+  });
+
+  document.querySelectorAll<HTMLElement>("[data-magnetic]").forEach((element) => {
+    if (reduceMotion) return;
+
+    element.addEventListener("pointermove", (event) => {
+      const rect = element.getBoundingClientRect();
+      const x = (event.clientX - rect.left - rect.width / 2) * 0.16;
+      const y = (event.clientY - rect.top - rect.height / 2) * 0.16;
+
+      animate(element, { x, y }, { duration: 0.28, easing: [0.16, 1, 0.3, 1] });
+    });
+
+    element.addEventListener("pointerleave", () => {
+      animate(element, { x: 0, y: 0 }, { duration: 0.45, easing: [0.16, 1, 0.3, 1] });
+    });
+  });
+</script>

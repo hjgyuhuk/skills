@@ -1,0 +1,23 @@
+---
+const metrics = [
+  ["0.7s", "preferred entrance duration ceiling"],
+  ["3", "primary animation behaviors"],
+  ["1", "Lenis loop guarded by reduced motion"]
+];
+---
+
+<section id="proof" class="bg-ink py-20 text-paper md:py-28">
+  <div class="shell">
+    <p class="eyebrow mb-10 text-paper before:bg-amber" data-reveal>System proof</p>
+    <div class="grid gap-px overflow-hidden border border-paper/20 bg-paper/20 md:grid-cols-3">
+      {
+        metrics.map(([value, label]) => (
+          <div class="min-h-56 bg-ink p-6" data-reveal>
+            <strong class="block font-display text-[clamp(4rem,9vw,8rem)] font-normal leading-none">{value}</strong>
+            <span class="mt-6 block max-w-52 text-sm font-bold uppercase leading-5 text-paper/58">{label}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
