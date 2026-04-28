@@ -36,6 +36,7 @@ Produce code that is:
 - 核心逻辑可测试，并补充必要单元测试
 - 不要为了模式而模式，不要把简单问题复杂化
 - 使用slog输出错误信息
+- 使用最新github.com/spf13/cobra来制作cli并且每一个command都单独写一个文件
 
 请按以下顺序输出：
 1. 当前问题分析
