@@ -1,145 +1,117 @@
 ---
 name: development_context
-description: Generate or update .agents/CONTEXT.md (static/structural architecture), .agents/CODE.md (sparse semantic code graph) and .agents/STATE.md (dynamic progress, lessons learned, and next steps). Use when user asks to summarize project status, create handoff docs, update AI context files, or record engineering lessons.
+description: Generate or update .agents/CONTEXT.md (static facts), .agents/CODE.md (code navigation graph), .agents/STATE.md (current progress and active policies), and .agents/DECISIONS.md (anti-patterns, confirmed patterns, decisions and trade-offs). Use when user asks to summarize project status, create handoff docs, update AI context files, or record engineering lessons.
 ---
 
-# Development Context System
+# Development Context
 
-Maintain three decoupled context files with distinct change frequencies:
+Four files, each answers one question:
 
-1. `.agents/CONTEXT.md`: Static system invariants, architecture (Low Churn).
-2. `.agents/CODE.md`: Sparse semantic code graph for navigation (Medium Churn).
-3. `.agents/STATE.md`: Dynamic progress, lessons learned, and next steps (High Churn).
----
+| File | Question | Churn |
+|------|----------|-------|
+| `.agents/CONTEXT.md` | What is this world — static facts | Low |
+| `.agents/CODE.md` | Where things are — code navigation | Medium |
+| `.agents/STATE.md` | What am I doing now — progress + active policies | High |
+| `.agents/DECISIONS.md` | What did we learn — history distilled | Append-mostly |
 
-## 1. Output Structure for `.agents/CONTEXT.md` (Static Baseline)
+Each file opens with frontmatter that makes it self-describing — an agent can read and maintain it from the description alone, without loading this skill.
 
-Always produce this Markdown structure for the core system definition:
+## CONTEXT.md — Static Facts
 
 ```markdown
 ---
 name: context
-description: Static system invariants, architecture.
+description: Static facts of this project — what this world is. Holds goal, invariants, and environment boundaries true for months. Update only when a durable fact changes. Never add tasks, progress, or code locations here.
 ---
 
 # Goal
 - ...
 
-# Invariants & Constraints (Universal Properties)
-- [Domain] Non-negotiable structural rules or safety invariants...
+# Invariants
+- Non-negotiable structural rules and safety constraints
 
-# Critical Environment & Boundaries
-- [Environment] Critical runtime, platform, dependency, or deployment constraints...
-- [Boundaries] Explicit limits on scope, access, compatibility, or operational behavior...
+# Environment & Boundaries
+- Runtime, platform, dependency, deployment constraints
+- Explicit limits on scope, access, compatibility
 ```
 
----
+Only facts that hold for months. No tasks, no progress, no code locations.
 
-## 2. Output Structure for `.agents/CODE.md` (Code Graph)
-
-Always produce this Markdown structure for the code graph:
+## CODE.md — Structural Navigation
 
 ```markdown
 ---
 name: code
-description: Sparse directed semantic graph of the codebase. Keep only important code concepts and meaningful relationships to help an agent decide what to inspect next.
+description: Sparse code navigation graph — where things are. Important concepts and relationships mapped to source paths, only edges that help an agent decide what to read next. Update when structure moves. Source code stays authoritative — never explain code here.
 ---
 
 # Code Graph
 
 Order
-├── creates → OrderCreated
 ├── uses → Pricing
 ├── persists → OrderRepository
-└── handled-by → CreateOrder
+└── emits → OrderCreated
 
-Payment
-├── uses → PaymentGateway
-└── emits → PaymentCompleted
-
-Order          → src/domain/order.ts
-CreateOrder    → src/application/create-order.ts
+Order           → src/domain/order.ts
 OrderRepository → src/domain/order-repository.ts
 ```
 
-Generate a sparse directed semantic graph of the codebase.
-Keep only important code concepts (modules, core classes, services, interfaces, events, etc.) and meaningful relationships (calls, uses, implements, creates, depends, etc.), with source paths when useful.
-Do not explain code, enumerate dependencies, or reproduce the architecture; only capture relationships that help an agent decide what to inspect next.
-Keep the graph minimal, stable, and navigable. The source code remains the authoritative source of detail.
+Important concepts and their relationships, mapped to source paths.
+Keep only edges that help an agent decide what to read next.
+The source code stays authoritative — never explain code here.
 
----
-
-## 3. Output Structure for `.agents/STATE.md` (Dynamic State & Memory)
-
-Always produce this Markdown structure for active state and execution history:
+## STATE.md — Current State
 
 ```markdown
 ---
 name: state
-description: Dynamic progress, lessons learned, and next steps.
+description: Current work state — what I am doing now. Holds focus, verified progress, active policies, and next steps, written as a handoff for the next session. Policies are active rules lifted from DECISIONS.md, not history. Keep under ~100 lines — graduate lessons to DECISIONS.md, delete superseded progress.
 ---
 
-# Active Phase & Focus
-
-* Current Sprint / Focus: ...
+# Now
+- Current focus: ...
 
 # Progress
+- [Task] — verified by [test passed / metric confirmed]
 
-## Done
+# Policy
+- [Rule in effect for current work, lifted from DECISIONS.md]
 
-* [Task] [Verification Proof: test passed / metric confirmed]
-
-## In Progress
-
-* ...
-
-## Blocked
-
-* ...
-
-# Lessons Learned (Monadic Abstraction)
-
-## ❌ Anti-patterns & Failed Hypotheses
-
-* [Generalized Anti-pattern] — [Root Cause] — [Symptom / Detection Method]
-
-## ✅ Viable Paths & Confirmed Patterns
-
-* [Confirmed Approach] — [Why it holds invariant / Safe Reason]
-
-# Key Decisions & Trade-offs
-
-* [Decision] — [Why Chosen] — [Alternatives Rejected]
-
-# Immediate Next Steps
-
-* ...
+# Next
+- ...
 ```
 
+Write it as a handoff for the next session. Policies are active rules, not history.
+
+## DECISIONS.md — Historical Knowledge
+
+```markdown
 ---
+name: decisions
+description: Historical knowledge — what we learned. Anti-patterns, confirmed patterns, and decisions with trade-offs, distilled and generalized. Append-only — raw error logs never land here. When an entry constrains current work, restate it as a Policy line in STATE.md.
+---
+
+# Anti-patterns
+- ❌ [generalized anti-pattern] — [root cause] — [symptom / how to detect]
+
+# Confirmed Patterns
+- ✅ [approach] — [why it holds]
+
+# Decisions & Trade-offs
+- [decision] — [why chosen] — [alternative rejected]
+```
+
+Append distilled knowledge only. Raw error logs never land here — generalize first.
 
 ## Workflow
 
-1. **Gather Input** — collect codebase status, git logs, diffs, test outputs, and existing `.agents/` files.
-2. **Route Information**:
-
-* Route system goals, file structure, invariants, and architecture flows to `.agents/CONTEXT.md`.
-* Route active status, recent failures, proofs of completion, and immediate tasks to `.agents/STATE.md`.
-* Route important code concepts and meaningful relationships to `.agents/CODE.md`.
-
-3. **Analyze & Lift** — in `STATE.md`, abstract specific execution errors into generalized Anti-patterns instead of dumping raw error logs.
-4. **Garbage Collection (GC)**:
-
-* If `.agents/STATE.md` exceeds ~150 lines, archive obsolete progress or resolved lessons to `.agents/STATE_ARCHIVE.md`.
-
-5. **Draft & Diff** — update both files ensuring clear separation of concern.
-6. **Verify** — ensure every "Done" task in `STATE.md` includes explicit verification proof.
-
----
-
-## Rules
-
-* **Strict Separation of Concerns**: Never put ephemeral tasks or error logs inside `CONTEXT.md`. Never hardcode static architecture diagrams inside `STATE.md`.
-* **Enforce Invariants**: Never mark a path as "Viable" in `STATE.md` if it violates any defined Invariant in `CONTEXT.md`.
-* **Error Compression**: Merge similar mistakes into high-level Anti-pattern rules.
-* Keep both files lean, highly structured, and optimized for LLM Attention.
+1. **Read** — existing `.agents/` files, git log/diff, test output.
+2. **Route** — every piece of information by its question:
+   - Stable for months → CONTEXT.md
+   - Where code lives → CODE.md
+   - Changing right now → STATE.md
+   - Distilled lesson or choice → DECISIONS.md
+3. **Write** — touch only the files that changed.
+   - When history constrains current work, restate it as a Policy line in STATE.md.
+   - Never mark work done if it violates a Policy or a CONTEXT invariant.
+   - Keep STATE.md under ~100 lines: graduate lessons to DECISIONS.md, delete superseded progress.
